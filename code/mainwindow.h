@@ -20,10 +20,10 @@ public:
 protected:
 //    void closeEvent(QCloseEvent *event);
 
-private slots:
+protected slots:
     void newFile();
-//    void open();
-//    bool save();
+    void open();
+    bool save();
 //    bool saveAs();
 //    void find();
 //    void gotoLine();
@@ -39,6 +39,8 @@ private:
     QAction* recentFileActions[emMaxRecentFile];
 
     void createActions();
+    void createContextActions();
+    void createToolBar();
 };
 
 #endif // MAINWINDOW_H
