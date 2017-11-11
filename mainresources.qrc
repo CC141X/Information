@@ -7,5 +7,6 @@
         <file>resources/images/open.png</file>
         <file>resources/images/paste.png</file>
         <file>resources/images/save.png</file>
+        <file>resources/images/logo_startup.png</file>
     </qresource>
 </RCC>

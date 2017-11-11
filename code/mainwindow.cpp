@@ -1,16 +1,28 @@
+#include <QLabel>
+#include <QMessageBox>
+#include <QFileDialog>
+#include <QSettings>
+
 #include "mainwindow.h"
+#include "gotolinedialog.h"
+#include "finddialog.h"
 #include "ui_mainwindow.h"
+#include "common/commondefine.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    m_findDlg(0)
 {
     ui->setupUi(this);
+
+    readSettings();
 
     createActions();
     //createMenus();
     createContextActions();
     createToolBar();
+    createStatusBar();
 
     setWindowIcon(QIcon(":/resources/images/logo_lefttop.png"));
 }
@@ -60,12 +72,17 @@ void MainWindow::createActions()
     ui->action_All->setStatusTip(tr("Select all the cells int the spreadsheet."));
     connect(ui->action_All, SIGNAL(triggered(bool)), ui->mainTableWidget, SLOT(selectAll()));
 
+    ui->action_Find->setStatusTip(tr("Find the specified content"));
+    connect(ui->action_Find, SIGNAL(triggered(bool)), this, SLOT(find()));
+    ui->action_GotoLine->setStatusTip(tr("Go to line"));
+    connect(ui->action_GotoLine, SIGNAL(triggered(bool)), this, SLOT(gotoLine()));
+
     ui->action_ShowGrid->setChecked(ui->mainTableWidget->showGrid());
     ui->action_ShowGrid->setStatusTip(tr("Show or hide the table grid."));
     connect(ui->action_ShowGrid, SIGNAL(toggled(bool)), ui->mainTableWidget, SLOT(setShowGrid(bool)));
     //帮助菜单
     ui->action_About->setStatusTip(tr("Show the Information Library's About box."));
-    connect(ui->action_About, SIGNAL(triggered(bool)), qApp, SLOT(aboutQt()));
+    connect(ui->action_About, SIGNAL(triggered(bool)), this, SLOT(about()));
 }
 /**
  * @brief MainWindow::createContextActions
@@ -96,18 +113,241 @@ void MainWindow::createToolBar()
     ui->mainToolBar->addAction(ui->action_Find);
 }
 
-void MainWindow::newFile()
+/**
+ * @brief MainWindow::createStatusBar
+ * @date 2017/11/11
+ */
+void MainWindow::createStatusBar()
 {
-    qDebug("[%s, %s]", __DATE__, __FUNCTION__);
+    m_labelStatusBarLocation = new QLabel("W999");//设置大小
+    m_labelStatusBarLocation->setAlignment(Qt::AlignCenter);
+    m_labelStatusBarLocation->setMinimumSize(m_labelStatusBarLocation->sizeHint());
+
+    m_labelStatusBarContent = new QLabel;
+    m_labelStatusBarContent->setIndent(3);//设置偏移量
+
+    statusBar()->addWidget(m_labelStatusBarLocation);
+    statusBar()->addWidget(m_labelStatusBarContent, 1);//伸展因子为1
+
+    connect(ui->mainTableWidget, SIGNAL(currentCellChanged(int,int,int,int)),
+           this, SLOT(updateStatusBar()));
+    connect(ui->mainTableWidget, SIGNAL(modified()), this, SLOT(mainTableWidgetModified()));
+
+    updateStatusBar();
 }
 
+/**
+ * @brief MainWindow::updateStatusBar
+ * @date 2017/11/11
+ */
+void MainWindow::updateStatusBar()
+{
+    m_labelStatusBarLocation->setText("loation"/*ui->mainTableWidget->currentItemLocation()*/);
+    m_labelStatusBarContent->setText("content"/*ui->mainTableWidget->currentItemContent()*/);
+}
+
+/**
+ * @brief MainWindow::mainTableWidgetModified
+ * @date 2017/11/11
+ */
+void MainWindow::mainTableWidgetModified()
+{
+    setWindowModified(true);
+    updateStatusBar();
+}
+
+/**
+ * @brief MainWindow::newFile
+ * @date 2017/11/11
+ */
+void MainWindow::newFile()
+{
+    if(okToContinue())
+    {
+        ui->mainTableWidget->clear();
+        setCurrentFile("");
+    }
+}
+
+/**
+ * @brief MainWindow::open
+ * @date 2017/11/11
+ */
 void MainWindow::open()
 {
-    qDebug("[%s, %s]", __DATE__, __FUNCTION__);
+    if(okToContinue())
+    {
+        //第三个参数指定从哪一级目录开始打开
+        QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), tr("."),
+                                                        tr("Table file (*.*)\n"
+                                                           "Comma-separated values files (*.csv)"));
+        if(!fileName.isEmpty())
+            loadFile(fileName);
+    }
 }
 
 bool MainWindow::save()
 {
     qDebug("[%s, %s]", __DATE__, __FUNCTION__);
     return true;
+}
+
+/**
+ * @brief MainWindow::okToContinue
+ * @date 2017/11/11
+ */
+bool MainWindow::okToContinue()
+{
+    if(isWindowModified())
+    {
+        int r = QMessageBox::warning(this, tr("MainTableSheet"),
+                tr("The document has been modified.\nDo you want to save your changes?"),
+                QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+        if(QMessageBox::Yes == r){
+            return save();
+        }else if(QMessageBox::Cancel){
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief MainWindow::setCurrentFile
+ * @date 2017/11/11
+ * @param file
+ */
+void MainWindow::setCurrentFile(const QString &file)
+{
+    qDebug("[%s, %s]", __DATE__, __FUNCTION__);
+}
+
+/**
+ * @brief MainWindow::loadFile
+ * @date 2017/11/11
+ * @param file
+ */
+bool MainWindow::loadFile(const QString &file)
+{
+    qCritical("[%s, %s]", __DATE__, __FUNCTION__);
+    if(true/*!ui->mainTableWidget->readFile(file)*/)
+    {
+        statusBar()->showMessage(tr("Loading cancel"), 2000);//显示2秒
+        return false;
+    }
+
+    setCurrentFile(file);
+    statusBar()->showMessage(tr("File load"), 2000);
+    return true;
+}
+
+/**
+ * @brief MainWindow::find
+ * @date 2017/11/11
+ */
+void MainWindow::find()
+{
+    qDebug("[%s, %s] - begin", __DATE__, __FUNCTION__);
+    if(!m_findDlg)
+    {
+        m_findDlg = new FindDialog(this);
+
+//        connect(m_findDlg, SIGNAL(findNext(QString,Qt::CaseSensitivity)),
+//                ui->mainTableWidget, SLOT(findNext(QString,Qt::CaseSensitivity)));
+//        connect(m_findDlg, SIGNAL(findPrevious(QString,Qt::CaseSensitivity)),
+//                ui->mainTableWidget, SLOT(findPrevious(QString,Qt::CaseSensitivity)));
+    }
+    m_findDlg->show();
+    m_findDlg->raise();//顶层
+    m_findDlg->activateWindow();//活动
+    qDebug("[%s, %s] - end", __DATE__, __FUNCTION__);
+}
+
+/**
+ * @brief MainWindow::gotoLine
+ * @date 2017/11/11
+ */
+void MainWindow::gotoLine()
+{
+    qDebug("[%s, %s] - begin", __DATE__, __FUNCTION__);
+    GotoLineDialog gotoDlg(this);
+    if(gotoDlg.exec())
+    {
+        QString str = gotoDlg.getLineEditText().toUpper();
+    }
+    qDebug("[%s, %s] - end", __DATE__, __FUNCTION__);
+}
+
+/**
+ * @brief MainWindow::sort
+ * @date 2017/11/11
+ */
+void MainWindow::sort()
+{
+    qDebug("[%s, %s] - begin", __DATE__, __FUNCTION__);
+    //SortDialog sortDlg(this);
+    QList<QTableWidgetSelectionRange> range = ui->mainTableWidget->selectedRanges();
+    //sortDlg.setColumnRange('A' + range.leftColumn(), 'A' + range.rightColumn());
+    //if(sortDlg.exec()){
+    //    ui->mainTableWidget->performSort(sortDlg.comparisonObject());
+    //}
+    qDebug("[%s, %s] - end", __DATE__, __FUNCTION__);
+}
+
+/**
+ * @brief MainWindow::about
+ * @date 2017/11/11
+ */
+void MainWindow::about()
+{
+    QMessageBox::about(this, tr("About Information"),
+                       tr("<h2>Information 1.1</h2>"
+                          "<p>Copyright &copy; 2017 Software Inc."
+                          "<p>Information is a learning application that "
+                          "demonstrates all kinds of knowledges."));
+}
+
+/**
+ * @brief MainWindow::closeEvent
+ * @date 2017/11/11
+ * @param event
+ */
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    writeSettings();
+}
+
+/**
+ * @brief MainWindow::writeSettings
+ * @date 2017/11/11
+ */
+void MainWindow::writeSettings()
+{
+    QSettings settings(tr(chstrSettings[emComimutyName], chstrSettings[emApplicationName]));//组织名称和应用名称
+    settings.setValue(chstrSettings[emMainWindowGeometry], saveGeometry());//几何尺寸
+    settings.setValue("recentFiles", recentFiles);
+    settings.setValue(chstrSettings[emShowGrid], ui->action_ShowGrid->isChecked());
+}
+
+/**
+ * @brief MainWindow::readSettings
+ * @date 2017/11/11
+ */
+void MainWindow::readSettings()
+{
+    QSettings settings(tr(chstrSettings[emComimutyName], chstrSettings[emApplicationName]));//组织名称和应用名称
+
+    restoreGeometry(settings.value(chstrSettings[emMainWindowGeometry]).toByteArray());
+    recentFiles = settings.value(chstrSettings[emRecentOpenedFiles]).toStringList();
+    updateRecentFileActions();
+    ui->action_ShowGrid->setChecked(settings.value(chstrSettings[emShowGrid], true).toBool());//设置默认值true
+}
+
+/**
+ * @brief MainWindow::updateRecentFileActions
+ * @date 2017/11/11
+ */
+void MainWindow::updateRecentFileActions()
+{
+qDebug("[%s, %s] - begin", __DATE__, __FUNCTION__);
 }
