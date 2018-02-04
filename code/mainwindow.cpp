@@ -222,7 +222,7 @@ bool MainWindow::okToContinue()
  * @date 2017/11/11
  * @param file
  */
-void MainWindow::setCurrentFile(const QString &file)
+void MainWindow::setCurrentFile(const QString &/*file*/)
 {
     qDebug("[%s, %s]", __DATE__, __FUNCTION__);
 }
@@ -317,7 +317,7 @@ void MainWindow::about()
  * @date 2017/11/11
  * @param event
  */
-void MainWindow::closeEvent(QCloseEvent *event)
+void MainWindow::closeEvent(QCloseEvent */*event*/)
 {
     writeSettings();
 }

@@ -193,6 +193,14 @@ void MainTableWidget::copy()
 //    QApplication::clipboard()->setText(str);//剪贴板
 }
 
+/**
+ * @brief MainTableWidget::del
+ */
+void MainTableWidget::del()
+{
+
+}
+
 QTableWidgetSelectionRange MainTableWidget::selectedRange() const
 {
     QList<QTableWidgetSelectionRange> ranges = selectedRanges();

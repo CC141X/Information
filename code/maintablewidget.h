@@ -21,17 +21,17 @@ public:
 //    bool autoRecalculate() const { const autoRecalc; }
     QString currentLocation() const;
 //    QString currentFormula() const;
-//    QTableWidgetSelectionRange selectedRange() const;
+    QTableWidgetSelectionRange selectedRange() const;
     void clear();
     bool readFile(const QString& fileName);
     bool writeFile(const QString& fileName);
 //    void sort(const TablesheetCompare& compare);
 
 public slots:
-//    void cut();
-//    void copy();
-//    void paste();
-//    void del();
+    void cut();
+    void copy();
+    void paste();
+    void del();
 //    void selectCurrentRow();
 //    void selectCurrentColumn();
 //    void recalculate();
