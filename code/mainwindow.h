@@ -5,6 +5,7 @@
 
 class QAction;
 class QLabel;
+class MainTableWidget;
 
 namespace Ui {
 class MainWindow;
@@ -43,6 +44,7 @@ private:
 
     enum { emMaxRecentFile = 5 };
 
+    MainTableWidget* m_mainTableWidget;
     QAction* recentFileActions[emMaxRecentFile];
     QLabel* m_labelStatusBarLocation;
     QLabel* m_labelStatusBarContent;

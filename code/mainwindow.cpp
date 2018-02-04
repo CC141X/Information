@@ -4,6 +4,7 @@
 #include <QSettings>
 
 #include "mainwindow.h"
+#include "maintablewidget.h"
 #include "gotolinedialog.h"
 #include "finddialog.h"
 #include "ui_mainwindow.h"
@@ -12,9 +13,12 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
+    m_mainTableWidget(0),
     m_findDlg(0)
 {
     ui->setupUi(this);
+    m_mainTableWidget = new MainTableWidget(this);
+    setCentralWidget(m_mainTableWidget);
 
     readSettings();
 
@@ -70,16 +74,16 @@ void MainWindow::createActions()
     connect(ui->action_Paste, SIGNAL(triggered(bool)), this, SLOT(paste()));
 
     ui->action_All->setStatusTip(tr("Select all the cells int the spreadsheet."));
-    connect(ui->action_All, SIGNAL(triggered(bool)), ui->mainTableWidget, SLOT(selectAll()));
+    connect(ui->action_All, SIGNAL(triggered(bool)), m_mainTableWidget, SLOT(selectAll()));
 
     ui->action_Find->setStatusTip(tr("Find the specified content"));
     connect(ui->action_Find, SIGNAL(triggered(bool)), this, SLOT(find()));
     ui->action_GotoLine->setStatusTip(tr("Go to line"));
     connect(ui->action_GotoLine, SIGNAL(triggered(bool)), this, SLOT(gotoLine()));
 
-    ui->action_ShowGrid->setChecked(ui->mainTableWidget->showGrid());
+    ui->action_ShowGrid->setChecked(m_mainTableWidget->showGrid());
     ui->action_ShowGrid->setStatusTip(tr("Show or hide the table grid."));
-    connect(ui->action_ShowGrid, SIGNAL(toggled(bool)), ui->mainTableWidget, SLOT(setShowGrid(bool)));
+    connect(ui->action_ShowGrid, SIGNAL(toggled(bool)), m_mainTableWidget, SLOT(setShowGrid(bool)));
     //帮助菜单
     ui->action_About->setStatusTip(tr("Show the Information Library's About box."));
     connect(ui->action_About, SIGNAL(triggered(bool)), this, SLOT(about()));
@@ -90,10 +94,10 @@ void MainWindow::createActions()
  */
 void MainWindow::createContextActions()
 {
-    ui->mainTableWidget->addAction(ui->action_Cut);
-    ui->mainTableWidget->addAction(ui->action_Copy);
-    ui->mainTableWidget->addAction(ui->action_Paste);
-    ui->mainTableWidget->setContextMenuPolicy(Qt::ActionsContextMenu);//显示这些动作
+    m_mainTableWidget->addAction(ui->action_Cut);
+    m_mainTableWidget->addAction(ui->action_Copy);
+    m_mainTableWidget->addAction(ui->action_Paste);
+    m_mainTableWidget->setContextMenuPolicy(Qt::ActionsContextMenu);//显示这些动作
 }
 
 /**
@@ -129,9 +133,9 @@ void MainWindow::createStatusBar()
     statusBar()->addWidget(m_labelStatusBarLocation);
     statusBar()->addWidget(m_labelStatusBarContent, 1);//伸展因子为1
 
-    connect(ui->mainTableWidget, SIGNAL(currentCellChanged(int,int,int,int)),
+    connect(m_mainTableWidget, SIGNAL(currentCellChanged(int,int,int,int)),
            this, SLOT(updateStatusBar()));
-    connect(ui->mainTableWidget, SIGNAL(modified()), this, SLOT(mainTableWidgetModified()));
+    connect(m_mainTableWidget, SIGNAL(modified()), this, SLOT(mainTableWidgetModified()));
 
     updateStatusBar();
 }
@@ -164,7 +168,7 @@ void MainWindow::newFile()
 {
     if(okToContinue())
     {
-        ui->mainTableWidget->clear();
+        m_mainTableWidget->clear();
         setCurrentFile("");
     }
 }
@@ -179,7 +183,7 @@ void MainWindow::open()
     {
         //第三个参数指定从哪一级目录开始打开
         QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), tr("."),
-                                                        tr("Table file (*.*)\n"
+                                                        tr("Infomation table file (*.info)\n"
                                                            "Comma-separated values files (*.csv)"));
         if(!fileName.isEmpty())
             loadFile(fileName);
@@ -189,6 +193,7 @@ void MainWindow::open()
 bool MainWindow::save()
 {
     qDebug("[%s, %s]", __DATE__, __FUNCTION__);
+    m_mainTableWidget->writeFile("test");
     return true;
 }
 
@@ -286,7 +291,7 @@ void MainWindow::sort()
 {
     qDebug("[%s, %s] - begin", __DATE__, __FUNCTION__);
     //SortDialog sortDlg(this);
-    QList<QTableWidgetSelectionRange> range = ui->mainTableWidget->selectedRanges();
+    QList<QTableWidgetSelectionRange> range = m_mainTableWidget->selectedRanges();
     //sortDlg.setColumnRange('A' + range.leftColumn(), 'A' + range.rightColumn());
     //if(sortDlg.exec()){
     //    ui->mainTableWidget->performSort(sortDlg.comparisonObject());
