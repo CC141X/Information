@@ -2,6 +2,10 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QSettings>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QDebug>
 
 #include "mainwindow.h"
 #include "maintablewidget.h"
@@ -19,6 +23,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     m_mainTableWidget = new MainTableWidget(this);
     setCentralWidget(m_mainTableWidget);
+
+    //主窗口接受拖动和放下
+    m_mainTableWidget->setAcceptDrops(false);
+    setAcceptDrops(true);
 
     readSettings();
 
@@ -355,4 +363,31 @@ void MainWindow::readSettings()
 void MainWindow::updateRecentFileActions()
 {
 qDebug("[%s, %s] - begin", __DATE__, __FUNCTION__);
+}
+
+/**
+ * @brief MainWindow::dragEnterEvent
+ * @param event
+ * @date 2018/4/21
+ */
+void MainWindow::dragEnterEvent(QDragEnterEvent* event)
+{
+    if(event->mimeData()->hasFormat("text/uri-list"))
+        event->acceptProposedAction();
+}
+
+/**
+ * @brief MainWindow::dropEvent
+ * @param event
+ * @date 2018/4/21
+ */
+void MainWindow::dropEvent(QDropEvent* event)
+{
+    QList<QUrl> urls = event->mimeData()->urls();
+    if(urls.isEmpty()) return;
+
+    QString fileName = urls.first().toLocalFile();
+    if(fileName.isEmpty()) return;
+
+    qDebug("[%s %s] %s(%d) - begin", __DATE__, __TIME__, __FUNCTION__, __LINE__);
 }

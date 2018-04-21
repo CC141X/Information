@@ -25,6 +25,8 @@ protected:
     void closeEvent(QCloseEvent *event);
     void writeSettings();
     void readSettings();
+    void dragEnterEvent(QDragEnterEvent* event);
+    void dropEvent(QDropEvent* event);
 
 protected slots:
     void newFile();
